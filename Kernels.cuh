@@ -4,11 +4,11 @@
 namespace Kernels
 {
     __host__ void convolve(
-        double* kernel, 
+        float* kernel, 
         int kernel_width, 
         int kernel_height, 
-        double* image, 
+        unsigned char* image, 
         int image_width,
         int image_height,
-        double* result);
+        float* result);
 }

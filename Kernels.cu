@@ -5,22 +5,22 @@ const int THREADS_PER_DIM = 16;
 namespace Kernels
 {
     __global__ void convolve_kernel(
-        double* kernel, 
+        float* kernel, 
         int kernel_width, 
         int kernel_height, 
-        double* image, 
+        unsigned char* image, 
         int image_width,
         int image_height,
-        double* result);
+        float* result);
 
     __host__ void convolve(
-        double* kernel, 
+        float* kernel, 
         int kernel_width, 
         int kernel_height, 
-        double* image, 
+        unsigned char* image, 
         int image_width,
         int image_height,
-        double* result)
+        float* result)
     {
         // Set kernel parameters
         int blocks_y = (image_height + THREADS_PER_DIM - 1) / THREADS_PER_DIM;
@@ -43,13 +43,13 @@ namespace Kernels
     }
 
     __global__ void convolve_kernel(
-        double* kernel, 
+        float* kernel, 
         int kernel_width, 
         int kernel_height, 
-        double* image, 
+        unsigned char* image, 
         int image_width,
         int image_height,
-        double* result)
+        float* result)
     {
         // Calculate row + col for each thread
         int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -63,7 +63,7 @@ namespace Kernels
         int y_rad = kernel_height / 2;
         int x_rad = kernel_width / 2;
 
-        double sum = 0.0;
+        float sum = 0.0;
 
         for (int k_y = -1*y_rad; k_y <= y_rad; ++k_y) 
         {
