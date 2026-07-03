@@ -18,4 +18,18 @@ namespace Kernels
         int width,
         int height,
         float* result);
+
+    __host__ void gradient_direction(
+        float* grad_magnitude,
+        float* grad_direction,
+        int width,
+        int height,
+        float* result);
+
+    __host__ void non_maximum_supression(
+        float* grad_magnitude,
+        float* grad_direction,
+        int width,
+        int height,
+        float* result);
 }

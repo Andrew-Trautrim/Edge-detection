@@ -12,7 +12,7 @@ add_executable(EdgeDetection
     Main.cu
     Common.cu
     Kernels.cu
-    Sobel.cu
+    EdgeDetection.cu
 )
 
 target_include_directories(EdgeDetection PRIVATE

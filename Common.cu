@@ -8,7 +8,7 @@
 
 Kernel construct_gaussian(int size, float sigma)
 {
-    float* kernel = new float[size * size];
+    float* kernel = (float*)malloc(size * size * sizeof(float));
 
     const int radius = size / 2;
     const float sigma2 = sigma * sigma;
@@ -96,6 +96,66 @@ float* gradient_magnitude(float* x_grad, float* y_grad, int width, int height)
     // Free GPU memory
     cudaFree(d_x_grad);
     cudaFree(d_y_grad);
+    cudaFree(d_result);
+
+    return result;
+}
+
+float* gradient_direction(float* x_grad, float* y_grad, int width, int height)
+{
+    // Allocate GPU memory for gradients and result
+    float* d_x_grad;
+    float* d_y_grad;
+    float* d_result;
+
+    cudaMalloc(&d_x_grad, width * height * sizeof(float));
+    cudaMalloc(&d_y_grad, width * height * sizeof(float));
+    cudaMalloc(&d_result, width * height * sizeof(float));
+
+    // Copy image and kernel to GPU
+    cudaMemcpy(d_x_grad, x_grad, width * height * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_y_grad, y_grad, width * height * sizeof(float), cudaMemcpyHostToDevice);
+
+    // Apply kernel to image
+    Kernels::gradient_direction(d_x_grad, d_y_grad, width, height, d_result);
+
+    // Copy result from GPU 
+    float* result = (float *)std::malloc(width * height * sizeof(float));
+    cudaMemcpy(result, d_result, width * height * sizeof(float), cudaMemcpyDeviceToHost);
+
+    // Free GPU memory
+    cudaFree(d_x_grad);
+    cudaFree(d_y_grad);
+    cudaFree(d_result);
+
+    return result;
+}
+
+float* non_maximum_suppression(float* grad_magnitude, float* grad_direction, int width, int height)
+{
+    // Allocate GPU memory for gradients and result
+    float* d_grad_magnitude;
+    float* d_grad_direction;
+    float* d_result;
+
+    cudaMalloc(&d_grad_magnitude, width * height * sizeof(float));
+    cudaMalloc(&d_grad_direction, width * height * sizeof(float));
+    cudaMalloc(&d_result, width * height * sizeof(float));
+
+    // Copy image and kernel to GPU
+    cudaMemcpy(d_grad_magnitude, grad_magnitude, width * height * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_grad_direction, grad_direction, width * height * sizeof(float), cudaMemcpyHostToDevice);
+
+    // Apply kernel to image
+    Kernels::non_maximum_suppression(d_grad_magnitude, d_grad_direction, width, height, d_result);
+
+    // Copy result from GPU 
+    float* result = (float *)std::malloc(width * height * sizeof(float));
+    cudaMemcpy(result, d_result, width * height * sizeof(float), cudaMemcpyDeviceToHost);
+
+    // Free GPU memory
+    cudaFree(d_grad_magnitude);
+    cudaFree(d_grad_direction);
     cudaFree(d_result);
 
     return result;

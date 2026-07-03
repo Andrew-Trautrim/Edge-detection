@@ -1,7 +1,7 @@
 #include <opencv2/opencv.hpp>
 #include <iostream>
 
-#include "Sobel.cuh"
+#include "EdgeDetection.cuh"
 
 int main(int argc, char* argv[]) 
 {
@@ -20,9 +20,12 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    // Determine edges using Sobel operator
-    cv::Mat result = sobel(image, true);
+    cv::Mat sobel_result = sobel(image, true);
+    cv::Mat laplacian_result = laplacian(image, true);
+    cv::Mat canny_result = canny(image, true);
 
-    // Write image
-    cv::imwrite("../Output/result.png", result);
+    // Write images
+    cv::imwrite("../Output/sobel.png", sobel_result);
+    cv::imwrite("../Output/laplacian.png", laplacian_result);
+    cv::imwrite("../Output/canny.png", laplacian_result);
 }
