@@ -8,16 +8,23 @@ namespace Kernels
         float* kernel, 
         int kernel_width, 
         int kernel_height, 
-        unsigned char* image, 
+        float* image, 
         int image_width,
         int image_height,
+        float* result);
+
+    __global__ void gradient_magnitude_kernel(
+        float* x_grad,
+        float* y_grad,
+        int width,
+        int height,
         float* result);
 
     __host__ void convolve(
         float* kernel, 
         int kernel_width, 
         int kernel_height, 
-        unsigned char* image, 
+        float* image, 
         int image_width,
         int image_height,
         float* result)
@@ -42,11 +49,30 @@ namespace Kernels
         cudaDeviceSynchronize();
     }
 
+    __host__ void gradient_magnitude(
+        float* x_grad,
+        float* y_grad,
+        int width,
+        int height,
+        float* result)
+    {
+        // Set kernel parameters
+        int blocks_y = (height + THREADS_PER_DIM - 1) / THREADS_PER_DIM;
+        int blocks_x = (width + THREADS_PER_DIM - 1) / THREADS_PER_DIM;
+
+        dim3 BLOCKS(blocks_x, blocks_y);
+        dim3 THREADS(THREADS_PER_DIM, THREADS_PER_DIM);
+
+        gradient_magnitude_kernel<<<BLOCKS, THREADS>>>(x_grad, y_grad, width, height, result);
+
+        cudaDeviceSynchronize();
+    }
+
     __global__ void convolve_kernel(
         float* kernel, 
         int kernel_width, 
         int kernel_height, 
-        unsigned char* image, 
+        float* image, 
         int image_width,
         int image_height,
         float* result)
@@ -63,7 +89,7 @@ namespace Kernels
         int y_rad = kernel_height / 2;
         int x_rad = kernel_width / 2;
 
-        float sum = 0.0;
+        float sum = 0.0f;
 
         for (int k_y = -1*y_rad; k_y <= y_rad; ++k_y) 
         {
@@ -83,5 +109,24 @@ namespace Kernels
         }
 
         result[y * image_width + x] = sum;
+    }
+
+    __global__ void gradient_magnitude_kernel(
+        float* x_grad,
+        float* y_grad,
+        int width,
+        int height,
+        float* result)
+    {
+        // Calculate row + col for each thread
+        int y = blockIdx.y * blockDim.y + threadIdx.y;
+        int x = blockIdx.x * blockDim.x + threadIdx.x;
+
+        if (x >= width || y >= height) {
+            return;
+        }
+
+        int idx = y * width + x;
+        result[idx] = sqrtf((x_grad[idx] * x_grad[idx]) + (y_grad[idx] * y_grad[idx]));
     }
 }
