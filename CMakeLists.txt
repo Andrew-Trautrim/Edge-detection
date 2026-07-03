@@ -9,8 +9,10 @@ find_package(CUDAToolkit REQUIRED)
 find_package(OpenCV REQUIRED)
 
 add_executable(EdgeDetection
-    Sobel.cu
+    Main.cu
+    Common.cu
     Kernels.cu
+    Sobel.cu
 )
 
 target_include_directories(EdgeDetection PRIVATE
