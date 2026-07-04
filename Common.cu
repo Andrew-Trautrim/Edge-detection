@@ -2,6 +2,8 @@
 #include <cmath>
 #include <cstdlib>
 #include <iomanip>
+#include <stack>
+#include <utility>
 
 #include "Common.cuh"
 #include "Kernels.cuh"
@@ -161,6 +163,32 @@ float* non_maximum_suppression(float* grad_magnitude, float* grad_direction, int
     return result;
 }
 
+unsigned char* double_threshold(float* input, int width, int height, int low, int high)
+{
+    // Allocate GPU memory for gradients and result
+    float* d_input;
+    unsigned char* d_result;
+
+    cudaMalloc(&d_input, width * height * sizeof(float));
+    cudaMalloc(&d_result, width * height * sizeof(unsigned char));
+
+    // Copy image and kernel to GPU
+    cudaMemcpy(d_input, input, width * height * sizeof(float), cudaMemcpyHostToDevice);
+
+    // Apply kernel to image
+    Kernels::double_threshold(d_input, width, height, low, high, d_result);
+
+    // Copy result from GPU 
+    unsigned char* result = (unsigned char*)std::malloc(width * height * sizeof(unsigned char));
+    cudaMemcpy(result, d_result, width * height * sizeof(unsigned char), cudaMemcpyDeviceToHost);
+
+    // Free GPU memory
+    cudaFree(d_input);
+    cudaFree(d_result);
+
+    return result;
+}
+
 unsigned char* normalize(float* input, size_t size)
 {
     unsigned char* result = (unsigned char*)std::malloc(size * sizeof(unsigned char));
@@ -202,4 +230,75 @@ unsigned char* normalize(float* input, size_t size)
     }
 
     return result;
+}
+
+void hysteresis(unsigned char* input, int width, int height)
+{
+    // Load in all STRONG edges
+    std::stack<int> coordinates;
+    for (int i = 0; i < width * height; ++i)
+    {
+        if (input[i] == STRONG)
+        {
+            coordinates.push(i);
+        }
+    }
+
+    // DFS change all WEAK edges next to STRONG edges to STRONG edges
+    while (!coordinates.empty())
+    {
+        int idx = coordinates.top();
+        coordinates.pop();
+
+        int x = idx % width;
+        int y = idx / width;
+
+        for (int i = -1; i <= 1; ++i)
+        {
+            for (int j = -1; j <= 1; ++j)
+            {
+                if (i == j)
+                {
+                    continue;
+                }
+
+                int y_i = y + i;
+                int x_j = x + j;
+                if (y_i < 0 || y_i >= height || x_j < 0 || x_j >= width)
+                {
+                    continue;
+                }
+
+                int idx = y_i * width + x_j;
+                if (input[idx] == WEAK)
+                {
+                    input[idx] = STRONG;
+                    coordinates.push(idx);
+                }
+            }
+        }
+    }
+
+    // Remove all remaining WEAK edges
+    for (int i = 0; i < width * height; ++i)
+    {
+        if (input[i] == WEAK)
+        {
+            input[i] = NONE;
+        }
+    }
+}
+
+float maximum(float* input, size_t size)
+{
+    float max = 0.0f;
+    for (int i = 0; i < size; ++i)
+    {
+        if (max < input[i])
+        {
+            max = input[i];
+        }
+    }
+
+    return max;
 }

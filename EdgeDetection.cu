@@ -149,14 +149,20 @@ cv::Mat canny(cv::Mat image, bool reduce_noise)
     free(grad_magnitude_result);
     free(grad_direction_result);
 
-    // Normalize result
-    unsigned char* normalized_result = normalize(supressed_result, image.cols * image.rows);
+    // Double Thresholding
+    float max = maximum(supressed_result, image.cols * image.rows);
+    float low = 0.1f * max;
+    float high = 0.2f * max;
+    unsigned char* threshold_result = double_threshold(supressed_result, image.cols, image.rows, low, high);
     free(supressed_result);
+
+    // Hysteresis
+    hysteresis(threshold_result, image.cols, image.rows);
 
     // Reconstruct image
     cv::Mat result_image(image.rows, image.cols, image.type());
-    memcpy(result_image.data, normalized_result, image.rows * image.cols);
-    free(normalized_result);
+    memcpy(result_image.data, threshold_result, image.rows * image.cols);
+    free(threshold_result);
 
     // Return result
     return result_image;

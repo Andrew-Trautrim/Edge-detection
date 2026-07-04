@@ -27,5 +27,5 @@ int main(int argc, char* argv[])
     // Write images
     cv::imwrite("../Output/sobel.png", sobel_result);
     cv::imwrite("../Output/laplacian.png", laplacian_result);
-    cv::imwrite("../Output/canny.png", laplacian_result);
+    cv::imwrite("../Output/canny.png", canny_result);
 }

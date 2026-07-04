@@ -1,6 +1,10 @@
 #include <cuda_runtime.h>
 #include <curand_kernel.h>
 
+const unsigned char NONE   = 0;
+const unsigned char WEAK   = 128;
+const unsigned char STRONG = 255;
+
 namespace Kernels
 {
     __host__ void convolve(
@@ -26,10 +30,18 @@ namespace Kernels
         int height,
         float* result);
 
-    __host__ void non_maximum_supression(
+    __host__ void non_maximum_suppression(
         float* grad_magnitude,
         float* grad_direction,
         int width,
         int height,
         float* result);
+
+    __host__ void double_threshold(
+        float* input,
+        int width,
+        int height,
+        float low,
+        float high,
+        unsigned char* result);
 }

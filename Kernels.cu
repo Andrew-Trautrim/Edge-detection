@@ -27,12 +27,20 @@ namespace Kernels
         int height,
         float* result);
 
-    __global__ void non_maximum_supression_kernel(
+    __global__ void non_maximum_suppression_kernel(
         float* grad_magnitude,
         float* grad_direction,
         int width,
         int height,
         float* result);
+
+    __global__ void double_threshold_kernel(
+        float* input,
+        int width,
+        int height,
+        float low,
+        float high,
+        unsigned char* result);
 
     __host__ void convolve(
         float* kernel, 
@@ -101,7 +109,7 @@ namespace Kernels
         cudaDeviceSynchronize();
     }
 
-    __host__ void non_maximum_supression(
+    __host__ void non_maximum_suppression(
         float* grad_magnitude,
         float* grad_direction,
         int width,
@@ -115,7 +123,27 @@ namespace Kernels
         dim3 BLOCKS(blocks_x, blocks_y);
         dim3 THREADS(THREADS_PER_DIM, THREADS_PER_DIM);
 
-        non_maximum_supression_kernel<<<BLOCKS, THREADS>>>(grad_magnitude, grad_direction, width, height, result);
+        non_maximum_suppression_kernel<<<BLOCKS, THREADS>>>(grad_magnitude, grad_direction, width, height, result);
+
+        cudaDeviceSynchronize();
+    }
+
+    __host__ void double_threshold(
+        float* input,
+        int width,
+        int height,
+        float low,
+        float high,
+        unsigned char* result)
+    {
+        // Set kernel parameters
+        int blocks_y = (height + THREADS_PER_DIM - 1) / THREADS_PER_DIM;
+        int blocks_x = (width + THREADS_PER_DIM - 1) / THREADS_PER_DIM;
+
+        dim3 BLOCKS(blocks_x, blocks_y);
+        dim3 THREADS(THREADS_PER_DIM, THREADS_PER_DIM);
+
+        double_threshold_kernel<<<BLOCKS, THREADS>>>(input, width, height, low, high, result);
 
         cudaDeviceSynchronize();
     }
@@ -204,7 +232,7 @@ namespace Kernels
         result[idx] = atan2f(y_grad[idx], x_grad[idx]);
     }
 
-    __global__ void non_maximum_supression_kernel(
+    __global__ void non_maximum_suppression_kernel(
         float* grad_magnitude,
         float* grad_direction,
         int width,
@@ -270,6 +298,40 @@ namespace Kernels
         else 
         {
             result[idx] = 0.0f;
+        }
+    }
+
+    __global__ void double_threshold_kernel(
+        float* input,
+        int width,
+        int height,
+        float low,
+        float high,
+        unsigned char* result)
+    {
+        // Calculate row + col for each thread
+        int y = blockIdx.y * blockDim.y + threadIdx.y;
+        int x = blockIdx.x * blockDim.x + threadIdx.x;
+
+        if (x >= width || y >= height) 
+        {
+            return;
+        }
+
+        int idx = y * width + x;
+        float value = input[idx];
+
+        if (value >= high)
+        {
+            result[idx] = STRONG;
+        }
+        else if (value >= low)
+        {
+            result[idx] = WEAK;
+        }
+        else 
+        {
+            result[idx] = NONE;
         }
     }
 }
